@@ -184,32 +184,16 @@ void UThesisGameInstance::LoadFillData(class UThesisSaveGame* LoadedGameData)
 {
 	if (LoadedGameData)
 	{
+		bIsLoadedGame = true;
+
 		// Determine where to spawn
 		if (!LoadedGameData->LastCheckpoint.IsNone())
 		{
 			CheckpointPlayerStartName = LoadedGameData->LastCheckpoint;
 		}
-
-		bIsLoadedGame = true;
 		
 		// Open last level
 		UGameplayStatics::OpenLevel(this, LoadedGameData->LastLevel, true);
-
-		/*UWorld* CurrentWorld = GetWorld();
-		if (CurrentWorld != nullptr)
-		{
-			ACharacter* Player = UGameplayStatics::GetPlayerCharacter(CurrentWorld, 0);
-			if (Player)
-			{
-				APlayableCharacter* Playable = Cast<APlayableCharacter>(Player);
-				if (Playable)
-				{
-					Playable->
-				}
-			}
-			AThesisGameGameState* CurrentState = CurrentWorld->GetGameState<AThesisGameGameState>();
-			AQuest* ActiveQuest = CurrentState->GetActiveQuest();
-		}*/
 	}
 }
 

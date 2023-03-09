@@ -172,8 +172,6 @@ protected:
 
 	void RestartPlayer();
 
-	virtual void OnDeath(float KillingDamage, struct FDamageEvent const& DamageEvent, class APawn* InstigatingPawn, class AActor* DamageCauser);
-
 	/** Display interaction UI and enable extra controls */
 	UFUNCTION()
 	void OnInteractionCollisionOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -229,6 +227,10 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	// Event that gets called when actor dies
+	UFUNCTION(BlueprintNativeEvent)
+	void OnDeath(float KillingDamage, struct FDamageEvent const& DamageEvent, class APawn* InstigatingPawn, class AActor* DamageCauser);
+
 	// Called on every tick
 	//virtual void UpdateCamera(float DeltaTime) override;
 
@@ -267,6 +269,10 @@ public:
 	/** Get character's current health as percentage */
 	UFUNCTION(BlueprintCallable, Category = "Game|Character")
 	float GetHealthPercentage() const;
+
+	/** Add to player's health, thus healing him */
+	UFUNCTION(BlueprintCallable, Category = "Game|Character")
+	void AddHealth(int32 Amount);
 
 	UFUNCTION(BlueprintCallable, Category = "Game|Character")
 	TArray<class AWeaponMaster*> GetCurrentInventory() const;
@@ -316,7 +322,7 @@ protected:
 
 	/** Character's health */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
-	float fCharacterHealth;
+	int32 fCharacterHealth;
 
 	/** When health is considered low, usually around 15% */
 	float LowHealthPercentage;

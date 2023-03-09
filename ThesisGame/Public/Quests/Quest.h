@@ -51,9 +51,8 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = Properties)
 	bool bIsActive;
 
-private:
 	/** The objective state. Can be anything between Started, Completed, Failed */
-	UPROPERTY (Transient)
+	UPROPERTY (BlueprintReadOnly, Category = Properties)
 	TEnumAsByte<EQuestStates::Type> ObjectiveState;
 	
 public:
@@ -73,19 +72,18 @@ public:
 		return Obj2.ObjectiveName == ObjectiveName;
 	}
 
-	//UFUNCTION (BlueprintCallable)
 	bool Start()
 	{
 		if (ObjectiveState == EQuestStates::Inactive)
 		{
 			ObjectiveState = EQuestStates::Started;
 			bIsStarted = true;
+
 			return true;
 		}
 		return false;
 	}
 
-	//UFUNCTION (BlueprintCallable)
 	bool Activate()
 	{
 		if (ObjectiveState == EQuestStates::Started)
@@ -96,7 +94,6 @@ public:
 		return false;
 	}
 
-	//UFUNCTION(BlueprintCallable)
 	bool Deactivate()
 	{
 		if (ObjectiveState == EQuestStates::Started && bIsActive)
@@ -107,8 +104,7 @@ public:
 		return false;
 	}
 
-	//UFUNCTION(BlueprintCallable)
-	bool End(bool bFail)
+	bool End(bool bFail = false)
 	{
 		if (ObjectiveState == EQuestStates::Started)
 		{
@@ -159,6 +155,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	int32 GetCurrentStage() const;
+
+	UFUNCTION(BlueprintCallable)
+	bool StartObjective(FName TargetObjectiveName);
+
+	UFUNCTION(BlueprintCallable)
+	bool CompleteObjective(FName TargetObjectiveName);
 
 public:
 	//***********

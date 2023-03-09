@@ -20,6 +20,11 @@ AThesisGameGameMode::AThesisGameGameMode()
 	HUDClass = AThesisGameHUD::StaticClass();
 	PlayerControllerClass = APlayableController::StaticClass();
 	GameStateClass = AThesisGameGameState::StaticClass();
+}
+
+void AThesisGameGameMode::BeginPlay()
+{
+	Super::BeginPlay();
 
 	//Set a pointer to the game instance
 	UWorld* World = GetWorld();
@@ -27,11 +32,6 @@ AThesisGameGameMode::AThesisGameGameMode()
 	{
 		CurrentGameInstance = Cast<UThesisGameInstance>(UGameplayStatics::GetGameInstance(World));
 	}
-}
-
-void AThesisGameGameMode::BeginPlay()
-{
-	Super::BeginPlay();
 
 	//Bind our Player died delegate to the Gamemode's PlayerDied function.
 	if (!bPlayerDied.IsBound())

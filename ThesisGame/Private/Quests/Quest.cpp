@@ -5,6 +5,7 @@
 #include "Objective.h"
 #include "Kismet/GameplayStatics.h"
 #include "ThesisGameGameState.h"
+#include "ThesisGameGameMode.h"
 #include "ThesisGameHUD.h"
 #include "UObject/ConstructorHelpers.h"
 #include "TimerManager.h"
@@ -48,13 +49,14 @@ void AQuest::Start()
 
 		// Just ask from HUD to show the "quest started" message
 		APlayerController* CurrentPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-		if (CurrentPlayerController != nullptr)
+		if (CurrentPlayerController)
 		{
 			AThesisGameHUD* PlayerHUD = CurrentPlayerController->GetHUD<AThesisGameHUD>();
-			if (PlayerHUD != nullptr)
+			AThesisGameGameMode* GameMode = GetWorld()->GetAuthGameMode<AThesisGameGameMode>();
+			if (PlayerHUD && GameMode)
 			{
-				PlayerHUD->AddToStartQueue(this);
-				PlayerHUD->EnableQuestStartedWidget();
+				PlayerHUD->AddQuestToQueue(this);
+				PlayerHUD->ShowMSGWidget(GameMode->QuestMSGWidgetClass);
 			}
 		}
 	}
@@ -89,29 +91,31 @@ bool AQuest::Update(int32 NewStage)
 {
 	if (CanUpdate(NewStage))
 	{
-		// End current Objectives linked to CurrentStage
-		if (CurrentObjectives.Num() > 0)
+		APlayerController* CurrentPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+		AThesisGameHUD* PlayerHUD = nullptr;
+		if (CurrentPlayerController)
 		{
-			for (int32 i = 0; i < CurrentObjectives.Num(); i++)
+			PlayerHUD = CurrentPlayerController->GetHUD<AThesisGameHUD>();
+		}
+		// End current Objectives linked to CurrentStage
+		for (FQuestObjective& Objective : CurrentObjectives)
+		{
+			if (Objective.iLinkedStage == CurrentStage)
 			{
-				if (CurrentObjectives[i].iLinkedStage == CurrentStage)
-				{
-					CurrentObjectives[i].End(false);
-				}
+				Objective.End();
+				PlayerHUD->AddObjectiveToQueue(Objective);
 			}
 		}
 		// Update list of current objectives
-		if (ObjectivesList.Num() > 0)
+		for (FQuestObjective& Objective : ObjectivesList)
 		{
-			for (int32 i = 0; i < ObjectivesList.Num(); i++)
+			if (Objective.iLinkedStage == NewStage)
 			{
-				if (&ObjectivesList[i] && ObjectivesList[i].iLinkedStage == NewStage)
-				{
-					ObjectivesList[i].Start();
-					CurrentObjectives.AddUnique(ObjectivesList[i]);
-					//Display debug message
-					GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, FString::Printf(TEXT("Quest objective %s started."), *ObjectivesList[i].ObjectiveName.ToString()));
-				}
+				Objective.Start();
+				CurrentObjectives.AddUnique(Objective);
+				PlayerHUD->AddObjectiveToQueue(Objective);
+				//Display debug message
+				//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, FString::Printf(TEXT("Quest objective %s started."), *ObjectivesList[i].ObjectiveName.ToString()));
 			}
 		}
 		// Update stage
@@ -119,6 +123,13 @@ bool AQuest::Update(int32 NewStage)
 		CurrentStage = NewStage;
 		DetermineQuestFlow();
 		PendingUpdate = false;
+
+		// Ask to display objective message widget
+		AThesisGameGameMode* GameMode = GetWorld()->GetAuthGameMode<AThesisGameGameMode>();
+		if (PlayerHUD && GameMode)
+		{
+			PlayerHUD->ShowMSGWidget(GameMode->ObjectiveMSGWidgetClass);
+		}
 		return true;
 	}
 	return false;
@@ -128,6 +139,17 @@ void AQuest::Complete()
 {
 	CurrentQuestState = EQuestStates::Completed;
 	CurrentStage = EndStage;
+	// Just ask from HUD to show the "quest ended" message
+	APlayerController* CurrentPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if (CurrentPlayerController)
+	{
+		AThesisGameHUD* PlayerHUD = CurrentPlayerController->GetHUD<AThesisGameHUD>();
+		AThesisGameGameMode* GameMode = GetWorld()->GetAuthGameMode<AThesisGameGameMode>();
+		if (PlayerHUD && GameMode)
+		{
+			PlayerHUD->ShowMSGWidget(GameMode->QuestMSGWidgetClass);
+		}
+	}
 }
 
 void AQuest::ToggleObjective(FQuestObjective& WhichObjective, bool bActivate)
@@ -152,6 +174,58 @@ int32 AQuest::GetCurrentStage() const
 	return CurrentStage;
 }
 
+bool AQuest::StartObjective(FName TargetObjectiveName)
+{
+	AThesisGameHUD* PlayerHUD = nullptr;
+	APlayerController* CurrentPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	AThesisGameGameMode* GameMode = GetWorld()->GetAuthGameMode<AThesisGameGameMode>();
+	if (CurrentPlayerController)
+	{
+		PlayerHUD = CurrentPlayerController->GetHUD<AThesisGameHUD>();
+	}
+	for (FQuestObjective& Objective : CurrentObjectives)
+	{
+		if (Objective.ObjectiveName == TargetObjectiveName && Objective.iLinkedStage == CurrentStage)
+		{
+			Objective.Start();
+			// Ask to display objective message widget
+			if (PlayerHUD && GameMode)
+			{
+				PlayerHUD->AddObjectiveToQueue(Objective);
+				PlayerHUD->ShowMSGWidget(GameMode->ObjectiveMSGWidgetClass);
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
+bool AQuest::CompleteObjective(FName TargetObjectiveName)
+{
+	AThesisGameHUD* PlayerHUD = nullptr;
+	APlayerController* CurrentPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	AThesisGameGameMode* GameMode = GetWorld()->GetAuthGameMode<AThesisGameGameMode>();
+	if (CurrentPlayerController)
+	{
+		PlayerHUD = CurrentPlayerController->GetHUD<AThesisGameHUD>();
+	}
+	for (FQuestObjective& Objective : CurrentObjectives)
+	{
+		if (Objective.ObjectiveName == TargetObjectiveName && Objective.iLinkedStage == CurrentStage)
+		{
+			Objective.End();
+			// Ask to display objective message widget
+			if (PlayerHUD && GameMode)
+			{
+				PlayerHUD->AddObjectiveToQueue(Objective);
+				PlayerHUD->ShowMSGWidget(GameMode->ObjectiveMSGWidgetClass);
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
 bool AQuest::CanUpdate(int32 TestStage) const
 {
 	bool PreviousCompleted = true;
@@ -165,7 +239,7 @@ bool AQuest::CanUpdate(int32 TestStage) const
 			}
 		}
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Can Quest Stage update? (%s)"), *FString(PreviousCompleted ? "True": "False"));
+	//UE_LOG(LogTemp, Warning, TEXT("Can Quest Stage update? (%s)"), *FString(PreviousCompleted ? "True": "False"));
 	return PreviousCompleted;
 }
 

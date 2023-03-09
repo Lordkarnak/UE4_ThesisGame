@@ -9,18 +9,17 @@
 #include "Quests/Quest.h"
 #include "ThesisGameHUD.generated.h"
 
-//class AQuest;
-
 UENUM(BlueprintType)
 namespace EInteractionTypes
 {
 	enum Type
 	{
-		Activate UMETA(DisplayName="Activate"),
-		Push UMETA(DisplayName = "Push"),
-		Take UMETA(DisplayName = "Take"),
-		Open UMETA(DisplayName = "Open"),
-		Close UMETA(DisplayName = "close")
+		Activate UMETA(DisplayName="activate"),
+		Push UMETA(DisplayName = "push"),
+		Take UMETA(DisplayName = "take"),
+		Open UMETA(DisplayName = "open"),
+		Close UMETA(DisplayName = "close"),
+		Save UMETA(DisplayName = "save progress")
 	};
 }
 
@@ -66,13 +65,19 @@ public:
 	AQuest* GetInMenuActiveQuest() const;
 
 	UFUNCTION(BlueprintCallable)
-	void EnableQuestStartedWidget();
+	void ShowMSGWidget(TSubclassOf<class UUserWidget> WidgetClass);
 
 	UFUNCTION(BlueprintCallable)
-	void AddToStartQueue(AQuest* WhichQuest);
+	void AddQuestToQueue(AQuest* WhichQuest);
 
 	UFUNCTION(BlueprintCallable)
-	TArray<AQuest*> GetStartedQuests() const;
+	void AddObjectiveToQueue(const FQuestObjective& Objective);
+
+	UFUNCTION(BlueprintCallable)
+	TArray<AQuest*> GetQuestsQueue() const;
+
+	UFUNCTION(BlueprintCallable)
+	TArray<FQuestObjective> GetObjectivesQueue() const;
 
 private:
 	/** Crosshair asset pointer */
@@ -90,8 +95,8 @@ private:
 	/** A menu widget instance */
 	UUserWidget* CurrentMenuWidget;
 
-	/** A quest started widget instance */
-	UUserWidget* QuestStartedWidget;
+	/** A message widget instance, shown only temporarily */
+	UUserWidget* MSGWidget;
 
 	/** An instance of the current interaction */
 	EInteractionTypes::Type CurrentInteraction;
@@ -103,10 +108,15 @@ private:
 	AQuest* InMenuQuest;
 
 	/** Array of freshly started quests*/
-	TArray<AQuest*> StartedQuestsQueue;
+	TArray<AQuest*> QuestsQueue;
+
+	TArray<FQuestObjective> ObjectivesQueue;
 
 	UFUNCTION()
-	void RemoveFromStartQueue(AQuest* WhichQuest);
+	void RemoveFromQuestQueue(AQuest* WhichQuest);
+
+	UFUNCTION()
+	void RemoveFromObjectiveQueue(const FQuestObjective& Objective);
 
 	UFUNCTION()
 	void MarkWidgetForDeletion(UUserWidget* WhichWidget);

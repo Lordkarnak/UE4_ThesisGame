@@ -32,14 +32,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UUserWidget> LogWidgetClass;
 
+	/** Main player HUD, contains health, crosshair and ammo */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UUserWidget> PlayerHUDWidget;
 
+	/** Interaction MSG widget */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UUserWidget> InteractionWidget;
 
+	/** Quest started MSG widget */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
-	TSubclassOf<UUserWidget> QuestStartedWidgetClass;
+	TSubclassOf<UUserWidget> QuestMSGWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UUserWidget> ObjectiveMSGWidgetClass;
 
 	/** Define the starting widget class */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")

@@ -9,6 +9,7 @@
 #include "Characters/PlayableController.h"
 #include "Weapons/WeaponMaster.h"
 #include "Pickups/Pickup.h"
+#include "Pickups/SaveTerminal.h"
 #include "Quests/Quest.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -195,18 +196,25 @@ void AThesisGameHUD::DetermineInteraction(UPrimitiveComponent* TargetComp, AActo
 {
 	AWeaponMaster* WeaponType = nullptr;
 	APickup* PickupType = nullptr;
+	ASaveTerminal* Terminal = nullptr;
 	if (TargetComp != nullptr)
 	{
 		WeaponType = Cast<AWeaponMaster>(TargetComp);
 		PickupType = Cast<APickup>(TargetComp);
+		Terminal = Cast<ASaveTerminal>(TargetComp);
 	}
 	else if (TargetActor != nullptr)
 	{
 		WeaponType = Cast<AWeaponMaster>(TargetActor);
 		PickupType = Cast<APickup>(TargetActor);
+		Terminal = Cast<ASaveTerminal>(TargetActor);
 	}
 	
-	if (WeaponType != nullptr || PickupType != nullptr)
+	if (Terminal != nullptr)
+	{
+		CurrentInteraction = EInteractionTypes::Save;
+	}
+	else if (WeaponType != nullptr || PickupType != nullptr)
 	{
 		CurrentInteraction = EInteractionTypes::Take;
 	}
@@ -238,53 +246,67 @@ AQuest* AThesisGameHUD::GetInMenuActiveQuest() const
 	return InMenuQuest;
 }
 
-void AThesisGameHUD::EnableQuestStartedWidget()
+void AThesisGameHUD::ShowMSGWidget(TSubclassOf<class UUserWidget> WidgetClass)
 {
-	AThesisGameGameMode* MyGameMode = GetWorld()->GetAuthGameMode<AThesisGameGameMode>();
-	if (MyGameMode)
+	if (WidgetClass != NULL)
 	{
-		if (MyGameMode->QuestStartedWidgetClass != NULL)
+		/*if (MSGWidget != nullptr)
 		{
-			if (QuestStartedWidget != nullptr)
-			{
-				QuestStartedWidget->RemoveFromViewport();
-				QuestStartedWidget = nullptr;
-			}
-			//static ConstructorHelpers::FClassFinder<UUserWidget> StartQuestMessageObj(TEXT("/Game/ThesisGame/Menus/MSG_QuestStarted"));
-			QuestStartedWidget = CreateWidget<UUserWidget>(GetWorld(), MyGameMode->QuestStartedWidgetClass);
-			QuestStartedWidget->AddToViewport();
-			FTimerHandle QuestStartMessageTimer;
-			FTimerDelegate DeleteMessageDelegate;
-			DeleteMessageDelegate.BindUFunction(this, FName("MarkWidgetForDeletion"), QuestStartedWidget);
-			GetWorldTimerManager().SetTimer(QuestStartMessageTimer, DeleteMessageDelegate, 5.0f, false);
-		}
+			MSGWidget->RemoveFromViewport();
+			MSGWidget = nullptr;
+		}*/
+		//static ConstructorHelpers::FClassFinder<UUserWidget> StartQuestMessageObj(TEXT("/Game/ThesisGame/Menus/MSG_QuestStarted"));
+		UUserWidget* MSG = CreateWidget<UUserWidget>(GetWorld(), WidgetClass);
+		MSG->AddToViewport();
+		FTimerHandle MSGHideTimer;
+		FTimerDelegate DeleteMessageDelegate;
+		DeleteMessageDelegate.BindUFunction(this, FName("MarkWidgetForDeletion"), MSG);
+		GetWorldTimerManager().SetTimer(MSGHideTimer, DeleteMessageDelegate, 5.0f, false);
 	}
 }
 
-void AThesisGameHUD::AddToStartQueue(AQuest* WhichQuest)
+void AThesisGameHUD::AddQuestToQueue(AQuest* WhichQuest)
 {
-	StartedQuestsQueue.AddUnique(WhichQuest);
+	QuestsQueue.AddUnique(WhichQuest);
 	FTimerHandle RemoveTimerHandle;
-	FTimerDelegate RemoveFromStartQueueDelegate;
-	RemoveFromStartQueueDelegate.BindUFunction(this, FName("RemoveFromStartQueue"), WhichQuest);
+	FTimerDelegate RemoveFromQueueDelegate;
+	RemoveFromQueueDelegate.BindUFunction(this, FName("RemoveFromQuestQueue"), WhichQuest);
 	// Get the current queue and add 5 seconds for every quest in queue, ensuring that all quests will be displayed before cleaning the queue
-	float DeleteDelay = 5.0f;
-	int32 NumQuestsStarted = StartedQuestsQueue.Num();
-	for (int32 i = 0; i < NumQuestsStarted; i++)
-	{
-		if (StartedQuestsQueue[i]) { DeleteDelay += 5.0f; }
-	}
-	GetWorldTimerManager().SetTimer(RemoveTimerHandle, RemoveFromStartQueueDelegate, DeleteDelay, false);
+	int32 NumQuests = FMath::Max(1, QuestsQueue.Num());
+	float DeleteDelay = (5.0f * NumQuests);
+	GetWorldTimerManager().SetTimer(RemoveTimerHandle, RemoveFromQueueDelegate, DeleteDelay, false);
 }
 
-TArray<AQuest*> AThesisGameHUD::GetStartedQuests() const
+void AThesisGameHUD::AddObjectiveToQueue(const FQuestObjective& Objective)
 {
-	return StartedQuestsQueue;
+	ObjectivesQueue.AddUnique(Objective);
+	FTimerHandle RemoveTimerHandle;
+	FTimerDelegate RemoveFromQueueDelegate;
+	RemoveFromQueueDelegate.BindUFunction(this, FName("RemoveFromObjectiveQueue"), Objective);
+	// Get the current queue and add 5 seconds for every objective in queue, ensuring that all objectives will be displayed before cleaning the queue
+	int32 NumObjectives = FMath::Max(1, ObjectivesQueue.Num());
+	float DeleteDelay = (5.0f * NumObjectives);
+	GetWorldTimerManager().SetTimer(RemoveTimerHandle, RemoveFromQueueDelegate, DeleteDelay, false);
 }
 
-void AThesisGameHUD::RemoveFromStartQueue(AQuest* WhichQuest)
+TArray<AQuest*> AThesisGameHUD::GetQuestsQueue() const
 {
-	StartedQuestsQueue.Remove(WhichQuest);
+	return QuestsQueue;
+}
+
+TArray<FQuestObjective> AThesisGameHUD::GetObjectivesQueue() const
+{
+	return ObjectivesQueue;
+}
+
+void AThesisGameHUD::RemoveFromQuestQueue(AQuest* WhichQuest)
+{
+	QuestsQueue.Remove(WhichQuest);
+}
+
+void AThesisGameHUD::RemoveFromObjectiveQueue(const FQuestObjective& Objective)
+{
+	ObjectivesQueue.Remove(Objective);
 }
 
 void AThesisGameHUD::MarkWidgetForDeletion(UUserWidget* WhichWidget)

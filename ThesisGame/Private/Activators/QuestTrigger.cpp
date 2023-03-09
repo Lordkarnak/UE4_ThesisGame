@@ -37,6 +37,10 @@ void AQuestTrigger::OnOverlapBegin(class AActor* OverlappedActor, class AActor* 
 	UE_LOG(LogTemp, Warning, TEXT("(%s) overlapped with (%s)."), *OverlappedActor->GetName(), *OtherActor->GetName());
 	if (IsTriggeredBySetActor || IsTriggeredByPlayer)
 	{
+		if (TargetQuest == nullptr)
+		{
+			RegisterTargetQuest();
+		}
 		if (TargetQuest != nullptr && TargetQuest->Update(TargetStage))
 		{
 			SetLifeSpan(1.0f);

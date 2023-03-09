@@ -199,7 +199,7 @@ void APlayableCharacter::PawnClientRestart()
 
 float APlayableCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
-	if (fCharacterHealth <= 0.0f)
+	if (fCharacterHealth <= 0)
 	{
 		return 0.0f;
 	}
@@ -244,7 +244,7 @@ bool APlayableCharacter::Die(float KillingDamage, FDamageEvent const& DamageEven
 	}
 	UE_LOG(LogTemp, Warning, TEXT("Pawn is dying."));
 
-	fCharacterHealth = FMath::Min(0.0f, fCharacterHealth);
+	fCharacterHealth = FMath::Min(0, fCharacterHealth);
 
 	UDamageType const* const DamageType = DamageEvent.DamageTypeClass ? DamageEvent.DamageTypeClass->GetDefaultObject<UDamageType>() : GetDefault<UDamageType>();
 	Killer = GetDamageInstigator(Killer, *DamageType);
@@ -577,7 +577,7 @@ void APlayableCharacter::RestartPlayer()
 	}
 }
 
-void APlayableCharacter::OnDeath(float KillingDamage, struct FDamageEvent const& DamageEvent, class APawn* PawnInstigator, class AActor* DamageCauser)
+void APlayableCharacter::OnDeath_Implementation(float KillingDamage, struct FDamageEvent const& DamageEvent, class APawn* PawnInstigator, class AActor* DamageCauser)
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnDeath triggered."));
 	if (bIsDying)
@@ -1030,6 +1030,12 @@ int32 APlayableCharacter::GetHealth() const
 float APlayableCharacter::GetHealthPercentage() const
 {
 	return (GetBaseHealth() != 0) ? (this->fCharacterHealth /GetBaseHealth()) : 0;
+}
+
+void APlayableCharacter::AddHealth(int32 Amount)
+{
+	int32 AddedHealth = FMath::Min(GetBaseHealth(), this->fCharacterHealth + Amount);
+	this->fCharacterHealth += AddedHealth;
 }
 
 USkeletalMeshComponent* APlayableCharacter::GetPawnMesh() const
