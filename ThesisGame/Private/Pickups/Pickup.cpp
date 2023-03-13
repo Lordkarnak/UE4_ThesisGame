@@ -97,10 +97,15 @@ void APickup::OnPickup()
 	}
 }
 
-bool APickup::TransferPickup(APlayableCharacter* Pawn)
+bool APickup::TransferPickup_Implementation(APlayableCharacter* Pawn)
 {
 	return true;
 }
+
+//bool APickup::TransferPickup_Implementation(APlayableCharacter* Pawn)
+//{
+//	return true;
+//}
 
 void APickup::DisableEffects()
 {

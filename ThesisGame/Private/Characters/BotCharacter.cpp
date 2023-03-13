@@ -72,13 +72,14 @@ void ABotCharacter::LoadCharacterDefaults()
 	UThesisSaveGame* GameData = CurrentGameInstance->GetGameData();
 	if (GameData)
 	{
-		UE_LOG(LogTemp, Display, TEXT("Loading bot defaults..."));
-		if (GameData->BotData.Contains(ActorID))
+		if (GameData->BotData.Contains(this->ActorID))
 		{
+			UE_LOG(LogTemp, Display, TEXT("Loading bot defaults..."));
 			const FActorData& BotActorData = GameData->BotData[ActorID];
 			if (BotActorData.CurrentHealth <= 0)
 			{
-				Die(0, FDamageEvent(), nullptr, nullptr);
+				Die(fCharacterBaseHealth, FDamageEvent(), nullptr, nullptr);
+				return;
 			}
 			else
 			{
@@ -95,13 +96,12 @@ void ABotCharacter::LoadCharacterDefaults()
 				}
 				// Set bot's location
 				SetActorTransform(BotActorData.LastPosition, false, nullptr, ETeleportType::TeleportPhysics);
+				return;
 			}
 		}
 	}
-	else
-	{
-		SpawnDefaultInventory();
-	}
+	
+	SpawnDefaultInventory();
 }
 
 //void ABotCharacter::OnHearNoise(APawn* PawnInstigator, const FVector& Location, float Volume)

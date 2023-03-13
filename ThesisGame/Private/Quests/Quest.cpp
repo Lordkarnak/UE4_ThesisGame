@@ -126,7 +126,7 @@ bool AQuest::Update(int32 NewStage)
 
 		// Ask to display objective message widget
 		AThesisGameGameMode* GameMode = GetWorld()->GetAuthGameMode<AThesisGameGameMode>();
-		if (PlayerHUD && GameMode)
+		if (PlayerHUD && PlayerHUD->GetObjectivesQueue().Num() > 0 && GameMode)
 		{
 			PlayerHUD->ShowMSGWidget(GameMode->ObjectiveMSGWidgetClass);
 		}
@@ -228,15 +228,20 @@ bool AQuest::CompleteObjective(FName TargetObjectiveName)
 
 bool AQuest::CanUpdate(int32 TestStage) const
 {
-	bool PreviousCompleted = true;
-	if (TestStage > CurrentStage && !IsCompleted())
+	bool PreviousCompleted = false;
+	if (TestStage > CurrentStage && TestStage > StartStage && !IsCompleted())
 	{
 		if (CurrentObjectives.Num() > 0)
 		{
+			PreviousCompleted = true;
 			for (auto Objective : CurrentObjectives)
 			{
 				PreviousCompleted = PreviousCompleted && (Objective.isCompleted() || Objective.bIsMandatory == false);
 			}
+		}
+		else
+		{
+			PreviousCompleted = true;
 		}
 	}
 	//UE_LOG(LogTemp, Warning, TEXT("Can Quest Stage update? (%s)"), *FString(PreviousCompleted ? "True": "False"));

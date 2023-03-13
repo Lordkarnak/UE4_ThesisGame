@@ -3,6 +3,7 @@
 
 #include "ThesisGameGameState.h"
 #include "Quests/Quest.h"
+#include "SaveGameStructs.h"
 
 AThesisGameGameState::AThesisGameGameState()
 {
@@ -82,4 +83,35 @@ AQuest* AThesisGameGameState::FindQuest(class TSubclassOf<AQuest> WhichQuestClas
 	}
 
 	return nullptr;
+}
+
+void AThesisGameGameState::AddDeadBot(ABotCharacter* Bot)
+{
+	if (Bot != nullptr)
+	{
+		FActorData BotData = FActorData(Bot);
+		if (BotsList.Contains(BotData))
+		{
+			DeadBotsList.AddUnique(BotData);
+			BotsList.Remove(BotData);
+		}
+	}
+}
+
+void AThesisGameGameState::AddBot(ABotCharacter* Bot)
+{
+	if (Bot->IsAlive())
+	{
+		BotsList.AddUnique(FActorData(Bot));
+	}
+}
+
+TArray<FActorData> AThesisGameGameState::GetDeadBots() const
+{
+	return DeadBotsList;
+}
+
+TArray<FActorData> AThesisGameGameState::GetBots() const
+{
+	return BotsList;
 }

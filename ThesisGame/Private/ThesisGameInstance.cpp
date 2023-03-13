@@ -17,6 +17,7 @@ void UThesisGameInstance::Init()
 	FirstPlayerStartName = FName(TEXT("DefaultStart"));
 	CheckpointPlayerStartName = FName(TEXT("CheckpointStart"));
 	bIsLoadedGame = false;
+	bIsLoadedAutosave = false;
 }
 
 bool UThesisGameInstance::SaveGame(ASaveTerminal* Caller, const FString& SlotName, const int32 Index, bool bUseAsync)
@@ -70,22 +71,28 @@ bool UThesisGameInstance::SaveGame(ASaveTerminal* Caller, const FString& SlotNam
 			}
 
 			// Bots...
-			TArray<AActor*> Bots;
-			UGameplayStatics::GetAllActorsOfClass(CurrentWorld, ABotCharacter::StaticClass(), Bots);
-			int32 BotsCount = Bots.Num();
-			UE_LOG(LogTemp, Display, TEXT("Found %d bots"), BotsCount);
-			for (TActorIterator<ABotCharacter> It(CurrentWorld); It; ++It)
+			TArray<FActorData> AliveBots = CurrentState->GetBots();
+			int32 AliveBotsCount = AliveBots.Num();
+			UE_LOG(LogTemp, Display, TEXT("Found %d bots"), AliveBotsCount);
+			if (AliveBotsCount > 0)
 			{
-				// Indices matter, insert at ActorID index
-				//GameData->BotData.Insert(FActorData(*It), It->GetID());
-				GameData->BotData.Add(It->GetID(), FActorData(*It));
+				for (FActorData& Bot : AliveBots)
+				{
+					// Indices matter, insert at ActorID index
+					GameData->BotData.Add(Bot.ActorID, Bot);
+				}
 			}
-			//for (int32 j = 0; j < Bots.Num(); j++)
-			//{
-			//	// Upcast to playable as all bots derive from playable
-			//	APlayableCharacter* Bot = Cast<APlayableCharacter>(Bots[j]);
-			//	if (Bot) { GameData->BotData.Add(FActorData(Bot)); }
-			//}
+			
+			TArray<FActorData> DeadBots = CurrentState->GetDeadBots();
+			int32 DeadBotsCount = DeadBots.Num();
+			if (DeadBotsCount > 0)
+			{
+				for (FActorData& Bot : DeadBots)
+				{
+					// Indices matter, insert at ActorID index
+					GameData->BotData.Add(Bot.ActorID, Bot);
+				}
+			}
 		}
 
 		// Save process
@@ -99,7 +106,7 @@ bool UThesisGameInstance::SaveGame(ASaveTerminal* Caller, const FString& SlotNam
 		}
 		else
 		{
-			return UGameplayStatics::SaveGameToSlot(GameData, SaveSlot, SaveIndex);
+			return UGameplayStatics::SaveGameToSlot(GameData, SlotName, Index);
 		}
 	}
 	return false;
@@ -162,12 +169,24 @@ class UThesisSaveGame* UThesisGameInstance::LoadGame(const FString& SlotName, co
 	return NULL;
 }
 
+void UThesisGameInstance::LoadAutosave(const FString& SlotName, const int32 UserIndex)
+{
+	if (UGameplayStatics::DoesSaveGameExist(SlotName, UserIndex))
+	{
+		GameData = Cast<UThesisSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, UserIndex));
+		if (GameData != nullptr)
+		{
+			bIsLoadedAutosave = true;
+		}
+	}
+}
+
 void UThesisGameInstance::LoadDone(const FString& SlotName, const int32 UserIndex, USaveGame* LoadedGameData)
 {
 	GameData = Cast<UThesisSaveGame>(LoadedGameData);
 	if (GameData)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT("Load completed!"));
+		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT("Load completed!"));
 		// Unlock for saving again
 		PendingLoad = false;
 		//UE_LOG(LogTemp, Display, TEXT("Loaded level: %s"), *GameData->LastLevel.ToString());
@@ -209,7 +228,7 @@ bool UThesisGameInstance::IsPendingLoad() const
 
 bool UThesisGameInstance::IsLoadedGame() const
 {
-	return bIsLoadedGame;
+	return bIsLoadedGame || bIsLoadedAutosave;
 }
 
 class UThesisSaveGame* UThesisGameInstance::GetGameData() const

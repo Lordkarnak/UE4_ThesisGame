@@ -4,10 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
+#include "Characters/BotCharacter.h"
 #include "Quests/Quest.h"
 #include "ThesisGameGameState.generated.h"
 
 //class AQuest;
+struct FActorData;
 
 /**
  * 
@@ -17,9 +19,9 @@ class THESISGAME_API AThesisGameGameState : public AGameStateBase
 {
 	GENERATED_BODY()
 
+public:
 	AThesisGameGameState();
 
-public:
 	UFUNCTION(BlueprintCallable, Category = Quests)
 	bool AddQuest(AQuest* NewQuest);
 
@@ -41,6 +43,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Quests)
 	AQuest* FindQuest(class TSubclassOf<AQuest> WhichQuestClass);
 
+	TArray<FActorData> GetDeadBots() const;
+
+	TArray<FActorData> GetBots() const;
+
+	void AddDeadBot(ABotCharacter* Bot);
+
+	void AddBot(ABotCharacter* Bot);
+
 private:
 	UPROPERTY(Transient)
 	AQuest* ActiveQuest;
@@ -53,5 +63,8 @@ private:
 
 	UPROPERTY(Transient)
 	TArray<FName> QuestList;
+
+	TArray<FActorData> BotsList;
 	
+	TArray<FActorData> DeadBotsList;
 };

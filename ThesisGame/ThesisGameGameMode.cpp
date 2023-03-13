@@ -50,14 +50,15 @@ void AThesisGameGameMode::BeginPlay()
 	}
 
 	//Spawn quests and start them
-	FTimerHandle QuestHandle;
 	if (CurrentGameInstance && CurrentGameInstance->IsLoadedGame())
 	{
 		GetWorldTimerManager().SetTimerForNextTick(this, &AThesisGameGameMode::SpawnLoadedQuestList);
+		GetWorldTimerManager().SetTimerForNextTick(this, &AThesisGameGameMode::StoreLoadedBots);
 	}
 	else
 	{
 		GetWorldTimerManager().SetTimerForNextTick(this, &AThesisGameGameMode::SpawnDefaultQuestList);
+		GetWorldTimerManager().SetTimerForNextTick(this, &AThesisGameGameMode::StoreDefaultBots);
 	}
 }
 
@@ -74,6 +75,7 @@ class AActor* AThesisGameGameMode::ChoosePlayerStart_Implementation(AController*
 			{
 				TArray<class AActor*> PlayerStarts;
 				UGameplayStatics::GetAllActorsOfClass(World, APlayerStart::StaticClass(), PlayerStarts);
+				// Search for checkpoints
 				for (TActorIterator<APlayerStart> It(World); It; ++It)
 				{
 					if (GameInstance->CheckpointPlayerStartName == It->PlayerStartTag)
@@ -81,7 +83,12 @@ class AActor* AThesisGameGameMode::ChoosePlayerStart_Implementation(AController*
 						UE_LOG(LogTemp, Display, TEXT("Checkpoint (%s) selected"), *GameInstance->CheckpointPlayerStartName.ToString());
 						return *It;
 					}
-					else if (GameInstance->FirstPlayerStartName == It->PlayerStartTag)
+				}
+
+				// Checkpoint not found, search for default start
+				for (TActorIterator<APlayerStart> It(World); It; ++It)
+				{
+					if (GameInstance->FirstPlayerStartName == It->PlayerStartTag)
 					{
 						UE_LOG(LogTemp, Display, TEXT("First player start (%s) selected"), *GameInstance->FirstPlayerStartName.ToString());
 						return *It;
@@ -90,6 +97,8 @@ class AActor* AThesisGameGameMode::ChoosePlayerStart_Implementation(AController*
 			}
 		}
 	}
+
+	// Default start not found, default player start selected
 	return Super::ChoosePlayerStart_Implementation(Player);
 }
 
@@ -100,17 +109,28 @@ void AThesisGameGameMode::StartPlay()
 	check(GEngine != nullptr);
 
 	//Display debug message
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Thesis Game Mode running."));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Thesis Game Mode running."));
 }
 
 void AThesisGameGameMode::OnPlayerDeath(ACharacter* CallerCharacter)
 {
 	UE_LOG(LogTemp, Display, TEXT("OnPlayerDeath triggered"));
 	ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+	ABotCharacter* Bot = Cast<ABotCharacter>(CallerCharacter);
+	// Is caller a player?
 	if (CallerCharacter == Player)
 	{
 		FTimerHandle PlayerRespawnTimer;
 		GetWorldTimerManager().SetTimer(PlayerRespawnTimer, this, &AThesisGameGameMode::ReloadGame, 5.0f, false);
+	}
+	// Is caller a bot?
+	else if (Bot != NULL)
+	{
+		AThesisGameGameState* CurrentState = GetGameState<AThesisGameGameState>();
+		if (CurrentState != nullptr)
+		{
+			CurrentState->AddDeadBot(Bot);
+		}
 	}
 }
 
@@ -189,6 +209,68 @@ void AThesisGameGameMode::SpawnDefaultQuestList()
 					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 					AQuest* QuestInstance = CurrentWorld->SpawnActor<AQuest>(DefaultQuests[i], SpawnParams);
 					CurrentState->AddQuest(QuestInstance);
+				}
+			}
+		}
+	}
+}
+
+void AThesisGameGameMode::StoreLoadedBots()
+{
+	UThesisSaveGame* GameData = CurrentGameInstance->GetGameData();
+	UWorld* CurrentWorld = GetWorld();
+	AThesisGameGameState* CurrentState = GetGameState<AThesisGameGameState>();
+	if (GameData && CurrentWorld && CurrentState)
+	{
+		TArray<AActor*> Bots;
+		UGameplayStatics::GetAllActorsOfClass(CurrentWorld, ABotCharacter::StaticClass(), Bots);
+		for (AActor* BotActor : Bots)
+		{
+			ABotCharacter* BotCharacter = Cast<ABotCharacter>(BotActor);
+			if (BotCharacter != nullptr)
+			{
+				int32 id = BotCharacter->GetID();
+				if (GameData->BotData.Contains(id))
+				{
+					if (GameData->BotData[id].CurrentHealth > 0)
+					{
+						CurrentState->AddBot(BotCharacter);
+						UE_LOG(LogTemp, Display, TEXT("Added loaded alive bot (%d)"), BotCharacter->GetID());
+					}
+					else
+					{
+						CurrentState->AddDeadBot(BotCharacter);
+						BotCharacter->Destroy();
+						UE_LOG(LogTemp, Display, TEXT("Added loaded dead bot (%d)"), BotCharacter->GetID());
+					}
+				}
+			}
+		}
+	}
+}
+
+void AThesisGameGameMode::StoreDefaultBots()
+{
+	UWorld* CurrentWorld = GetWorld();
+	AThesisGameGameState* CurrentState = GetGameState<AThesisGameGameState>();
+	if (CurrentWorld && CurrentState)
+	{
+		TArray<AActor*> Bots;
+		UGameplayStatics::GetAllActorsOfClass(CurrentWorld, ABotCharacter::StaticClass(), Bots);
+		for (AActor* BotActor : Bots)
+		{
+			ABotCharacter* BotCharacter = Cast<ABotCharacter>(BotActor);
+			if (BotCharacter != nullptr)
+			{
+				if (BotCharacter->IsAlive())
+				{
+					CurrentState->AddBot(BotCharacter);
+					UE_LOG(LogTemp, Display, TEXT("Added alive bot (%d)"), BotCharacter->GetID());
+				}
+				else
+				{
+					CurrentState->AddDeadBot(BotCharacter);
+					UE_LOG(LogTemp, Display, TEXT("Added dead bot (%d)"), BotCharacter->GetID());
 				}
 			}
 		}

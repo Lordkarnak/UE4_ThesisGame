@@ -16,6 +16,10 @@ class THESISGAME_API ASaveTerminal : public APickup
 
 	void BeginPlay() override;
 public:
+	//bool TransferPickup(APlayableCharacter* Pawn);
+
+	virtual bool TransferPickup_Implementation(APlayableCharacter* Pawn) override;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Save)
 	FString SaveSlotName;
 
@@ -27,8 +31,6 @@ public:
 
 protected:
 	class UThesisGameInstance* GameInstance;
-
-	virtual bool TransferPickup(APlayableCharacter* Pawn) override;
 
 	bool PendingSave = false;
 };

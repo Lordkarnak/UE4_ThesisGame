@@ -38,7 +38,7 @@ struct FWeaponAnims
 UCLASS()
 class APlayableCharacter : public ACharacter
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
 
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	class USkeletalMeshComponent* Mesh1P;
@@ -56,6 +56,7 @@ class APlayableCharacter : public ACharacter
 	class UBoxComponent* InteractionCollisionComp;
 
 public:
+	APlayableCharacter();
 
 	// Play animations on this character
 	virtual float PlayAnimMontage(class UAnimMontage* AnimMontage, float InPlayRate = 1.f, FName StartSectionName = NAME_None) override;
@@ -215,7 +216,7 @@ protected:
 	virtual void LoadCharacterDefaults();
 
 	/** handles sounds for running */
-	void UpdateRunSounds();
+	void UpdateFootsteps();
 
 	/** handle mesh visibility and updates */
 	void UpdatePawnMeshes();
@@ -259,12 +260,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Game|Character")
 	bool IsRunning() const;
 
+	/** is character moving or standing still? */
+	UFUNCTION(BlueprintCallable, Category = "Game|Character")
+	bool IsMoving() const;
+
 	/** Get character's base health */
-	int32 GetBaseHealth() const;
+	float GetBaseHealth() const;
 
 	/** Get character's current health */
 	UFUNCTION(BlueprintCallable, Category = "Game|Character")
-	int32 GetHealth() const;
+	float GetHealth() const;
 
 	/** Get character's current health as percentage */
 	UFUNCTION(BlueprintCallable, Category = "Game|Character")
@@ -272,7 +277,7 @@ public:
 
 	/** Add to player's health, thus healing him */
 	UFUNCTION(BlueprintCallable, Category = "Game|Character")
-	void AddHealth(int32 Amount);
+	void AddHealth(float Amount);
 
 	UFUNCTION(BlueprintCallable, Category = "Game|Character")
 	TArray<class AWeaponMaster*> GetCurrentInventory() const;
@@ -316,13 +321,18 @@ public:
 	/** Get current ID assigned to this actor. Used for saving individual bots */
 	int32 GetID() const;
 
+	friend bool operator==(APlayableCharacter A, APlayableCharacter B);
+
 protected:
 	//*****************
 	//Character HUD
 
 	/** Character's health */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
-	int32 fCharacterHealth;
+	float fCharacterHealth;
+
+	UPROPERTY(Transient)
+	float fCharacterBaseHealth;
 
 	/** When health is considered low, usually around 15% */
 	float LowHealthPercentage;

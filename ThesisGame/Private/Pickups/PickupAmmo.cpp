@@ -3,7 +3,7 @@
 
 #include "PickupAmmo.h"
 
-bool APickupAmmo::TransferPickup(APlayableCharacter* Pawn)
+bool APickupAmmo::TransferPickup_Implementation(APlayableCharacter* Pawn)
 {
 	AWeaponMaster* MyWeapon = (Pawn ? Pawn->GetWeapon() : NULL);
 	if (MyWeapon)
@@ -15,6 +15,11 @@ bool APickupAmmo::TransferPickup(APlayableCharacter* Pawn)
 	}
 	return false;
 }
+
+//bool APickup::TransferPickup_Implementation(APlayableCharacter* Pawn)
+//{
+//	return true;
+//}
 
 bool APickupAmmo::MatchesWeapon(UClass* WeaponClass)
 {

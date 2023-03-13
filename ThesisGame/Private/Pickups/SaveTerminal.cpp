@@ -14,7 +14,7 @@ void ASaveTerminal::BeginPlay()
     // get a ref to game instance
     GameInstance = Cast<UThesisGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
 }
-bool ASaveTerminal::TransferPickup(APlayableCharacter* Pawn)
+bool ASaveTerminal::TransferPickup_Implementation(APlayableCharacter* Pawn)
 {
     UE_LOG(LogTemp, Display, TEXT("Game instance class: %s"), *GameInstance->GetClass()->GetName());
 	if (Pawn != NULL && GameInstance != NULL && !LinkedCheckpoint.IsNone())
@@ -34,3 +34,8 @@ bool ASaveTerminal::TransferPickup(APlayableCharacter* Pawn)
     // Always return false to prevent the pickup from destroying our save point!
     return false;
 }
+
+//bool APickup::TransferPickup_Implementation(APlayableCharacter* Pawn)
+//{
+//    return true;
+//}

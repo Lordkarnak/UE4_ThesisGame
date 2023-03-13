@@ -24,7 +24,7 @@
 #include "Weapons/WeaponMaster.h"
 
 // Sets default values
-APlayableCharacter::APlayableCharacter(const FObjectInitializer& ObjectInitializer)
+APlayableCharacter::APlayableCharacter()
 	//: Super(ObjectInitializer.SetDefaultSubobjectClass<UShooterCharacterMovement>(ACharacter::CharacterMovementComponentName)
 {
 	// Set correct capsule size
@@ -60,8 +60,8 @@ APlayableCharacter::APlayableCharacter(const FObjectInitializer& ObjectInitializ
 		//}
 
 		// Create a mesh component for the first person view
-		//Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
-		Mesh1P = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("CharacterMesh1P"));
+		Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
+		//Mesh1P = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("CharacterMesh1P"));
 		check(Mesh1P != nullptr);
 
 		//Mesh1P->SetupAttachment(Camera1P);
@@ -80,7 +80,8 @@ APlayableCharacter::APlayableCharacter(const FObjectInitializer& ObjectInitializ
 		//Mesh1P->SetRelativeRotation(FRotator(1.9f, -19.19f, 5.2f));
 		//Mesh1P->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
 
-		InteractionCollisionComp = ObjectInitializer.CreateDefaultSubobject<UBoxComponent>(this, TEXT("InteractiveCollision"));
+		//InteractionCollisionComp = ObjectInitializer.CreateDefaultSubobject<UBoxComponent>(this, TEXT("InteractiveCollision"));
+		InteractionCollisionComp = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractiveCollision"));
 		InteractionCollisionComp->SetBoxExtent(FVector(40.0f, 40.0f, 80.0f), true);
 		InteractionCollisionComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		InteractionCollisionComp->SetCollisionObjectType(ECC_WorldDynamic);
@@ -144,15 +145,19 @@ void APlayableCharacter::PostInitializeComponents()
 		CurrentGameInstance = Cast<UThesisGameInstance>(UGameplayStatics::GetGameInstance(World));
 	}
 
-	// Load things from save or set default
-	if (CurrentGameInstance != nullptr && CurrentGameInstance->IsLoadedGame())
+	if (GetLocalRole() == ROLE_Authority)
 	{
-		GetWorldTimerManager().SetTimerForNextTick(this, &APlayableCharacter::LoadCharacterDefaults);
-	}
-	else
-	{
-		fCharacterHealth = GetBaseHealth();
-		GetWorldTimerManager().SetTimerForNextTick(this, &APlayableCharacter::SpawnDefaultInventory);
+		// Load things from save or set default
+		if (CurrentGameInstance != nullptr && CurrentGameInstance->IsLoadedGame())
+		{
+			GetWorldTimerManager().SetTimerForNextTick(this, &APlayableCharacter::LoadCharacterDefaults);
+		}
+		else
+		{
+			fCharacterBaseHealth = GetBaseHealth();
+			fCharacterHealth = fCharacterBaseHealth;
+			GetWorldTimerManager().SetTimerForNextTick(this, &APlayableCharacter::SpawnDefaultInventory);
+		}
 	}
 
 	// set initial mesh visibility (3rd person view)
@@ -199,7 +204,7 @@ void APlayableCharacter::PawnClientRestart()
 
 float APlayableCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
-	if (fCharacterHealth <= 0)
+	if (fCharacterHealth <= 0.0f)
 	{
 		return 0.0f;
 	}
@@ -208,7 +213,7 @@ float APlayableCharacter::TakeDamage(float Damage, struct FDamageEvent const& Da
 	if (ActualDamage > 0.f)
 	{
 		fCharacterHealth -= ActualDamage;
-		if (fCharacterHealth <= 0)
+		if (fCharacterHealth <= 0.0f)
 		{
 			Die(ActualDamage, DamageEvent, EventInstigator, DamageCauser);
 		}
@@ -244,7 +249,7 @@ bool APlayableCharacter::Die(float KillingDamage, FDamageEvent const& DamageEven
 	}
 	UE_LOG(LogTemp, Warning, TEXT("Pawn is dying."));
 
-	fCharacterHealth = FMath::Min(0, fCharacterHealth);
+	fCharacterHealth = FMath::Min(0.0f, fCharacterHealth);
 
 	UDamageType const* const DamageType = DamageEvent.DamageTypeClass ? DamageEvent.DamageTypeClass->GetDefaultObject<UDamageType>() : GetDefault<UDamageType>();
 	Killer = GetDamageInstigator(Killer, *DamageType);
@@ -342,6 +347,10 @@ void APlayableCharacter::Tick(float DeltaTime)
 	{
 		Die(fCharacterHealth, FDamageEvent(UDamageType::StaticClass()), NULL, NULL);
 	}*/
+	if (GEngine->UseSound())
+	{
+		UpdateFootsteps();
+	}
 }
 
 // Called to bind functionality to input
@@ -874,6 +883,7 @@ void APlayableCharacter::LoadCharacterDefaults()
 
 			// Load player's health
 			fCharacterHealth = PlayerActorData.CurrentHealth;
+			fCharacterBaseHealth = GetBaseHealth();
 			// Load player's inventory
 			SpawnLoadedInventory(PlayerActorData);
 			// If loading somehow failed, spawn defaults
@@ -889,13 +899,13 @@ void APlayableCharacter::LoadCharacterDefaults()
 	}
 }
 
-void APlayableCharacter::UpdateRunSounds()
+void APlayableCharacter::UpdateFootsteps()
 {
-	const bool bIsRunSoundPlaying = RunLoopAC != nullptr && RunLoopAC->IsActive();
-	const bool bWantsRunSoundPlaying = bIsSprinting;
+	const bool bFootstepsPlaying = RunLoopAC != nullptr && RunLoopAC->IsActive();
+	//const bool b = bIsSprinting || bIsMoving;
 
 	// Don't bother playing the sounds unless we're running and moving.
-	if (!bIsRunSoundPlaying && bWantsRunSoundPlaying)
+	if (!bFootstepsPlaying && IsMoving())
 	{
 		if (RunLoopAC != nullptr)
 		{
@@ -910,12 +920,16 @@ void APlayableCharacter::UpdateRunSounds()
 			}
 		}
 	}
-	else if (bIsRunSoundPlaying && !bWantsRunSoundPlaying)
+	else
 	{
-		RunLoopAC->Stop();
-		if (RunStopSound != nullptr)
+		if (bFootstepsPlaying)
 		{
-			UGameplayStatics::SpawnSoundAttached(RunStopSound, GetRootComponent());
+			RunLoopAC->Stop();
+
+			if (RunStopSound != nullptr)
+			{
+				UGameplayStatics::SpawnSoundAttached(RunStopSound, GetRootComponent());
+			}
 		}
 	}
 }
@@ -1017,24 +1031,30 @@ bool APlayableCharacter::IsRunning() const
 	return bIsSprinting && !GetVelocity().IsZero() && (GetVelocity().GetSafeNormal2D() | GetActorForwardVector()) > -0.1;
 }
 
-int32 APlayableCharacter::GetBaseHealth() const
+bool APlayableCharacter::IsMoving() const
+{
+	return FMath::Abs(GetLastMovementInputVector().Size()) > 0;
+}
+
+float APlayableCharacter::GetBaseHealth() const
 {
 	return GetClass()->GetDefaultObject<APlayableCharacter>()->fCharacterHealth;
 }
 
-int32 APlayableCharacter::GetHealth() const
+float APlayableCharacter::GetHealth() const
 {
 	return this->fCharacterHealth;
 }
 
 float APlayableCharacter::GetHealthPercentage() const
 {
-	return (GetBaseHealth() != 0) ? (this->fCharacterHealth /GetBaseHealth()) : 0;
+	//return (this->GetBaseHealth() != 0) ? (this->fCharacterHealth /GetBaseHealth()) : 0;
+	return (this->fCharacterBaseHealth > 0) ? (this->fCharacterHealth / this->fCharacterBaseHealth) : 0;
 }
 
-void APlayableCharacter::AddHealth(int32 Amount)
+void APlayableCharacter::AddHealth(float Amount)
 {
-	int32 AddedHealth = FMath::Min(GetBaseHealth(), this->fCharacterHealth + Amount);
+	float AddedHealth = FMath::Min(fCharacterBaseHealth, this->fCharacterHealth + Amount);
 	this->fCharacterHealth += AddedHealth;
 }
 
@@ -1152,4 +1172,9 @@ bool APlayableCharacter::CanPickup() const
 int32 APlayableCharacter::GetID() const
 {
 	return ActorID;
+}
+
+bool operator==(APlayableCharacter A, APlayableCharacter B)
+{
+	return A.ActorID == B.ActorID;
 }

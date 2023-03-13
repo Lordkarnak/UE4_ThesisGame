@@ -34,6 +34,9 @@ public:
 	class UThesisSaveGame* LoadGame(const FString& SlotName, const int32 UserIndex, bool bUseAsync = false);
 
 	UFUNCTION(BlueprintCallable, Category = Game)
+	void LoadAutosave(const FString& SlotName, const int32 UserIndex);
+
+	UFUNCTION(BlueprintCallable, Category = Game)
 	bool IsPendingSave() const;
 
 	UFUNCTION(BlueprintCallable, Category = Game)
@@ -59,6 +62,8 @@ private:
 	bool PendingLoad;
 
 	bool bIsLoadedGame;
+
+	bool bIsLoadedAutosave;
 
 	UFUNCTION()
 	void SaveDone(const FString& SlotName, const int32 UserIndex, bool bSuccess);

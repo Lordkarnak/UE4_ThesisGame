@@ -27,6 +27,12 @@ class THESISGAME_API APickup : public AActor
 
 	void BindToPlayerInput();
 
+public:
+	UFUNCTION(BlueprintNativeEvent)
+	bool TransferPickup(APlayableCharacter* Pawn);
+
+	//virtual bool TransferPickup_Implementation(APlayableCharacter* Pawn);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -34,8 +40,6 @@ protected:
 	virtual void DisableEffects();
 
 	void OnPickup();
-
-	virtual bool TransferPickup(APlayableCharacter* Pawn);
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category=Effects)

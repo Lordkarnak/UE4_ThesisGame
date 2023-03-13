@@ -37,14 +37,6 @@ AWeaponMaster::AWeaponMaster(const FObjectInitializer& ObjectInitializer) : Supe
 	bIsFiring = false;
 	bPendingEquip = false;
 	bPendingReload = false;
-	CurrentState = EWeaponStates::Idle;
-
-	CurrentAmmo = 0;
-	CurrentMaxAmmo = 0;
-
-	LastFireTime = 0.0f;
-	CurrentFiringSpread = 0.0f;
-	CurrentFirepower = WeaponConfig.Firepower;
 
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -54,6 +46,15 @@ AWeaponMaster::AWeaponMaster(const FObjectInitializer& ObjectInitializer) : Supe
 void AWeaponMaster::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+
+	CurrentState = EWeaponStates::Idle;
+
+	CurrentAmmo = 0;
+	CurrentMaxAmmo = 0;
+
+	LastFireTime = 0.0f;
+	CurrentFiringSpread = 0.0f;
+	CurrentFirepower = WeaponConfig.Firepower;
 
 	if (WeaponConfig.InitialAmmo > 0)
 	{

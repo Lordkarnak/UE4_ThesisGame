@@ -174,6 +174,33 @@ public:
         }
     }
 
+    FActorData(APlayableCharacter& TargetActor)
+    {
+        ActorID = TargetActor.GetID();
+        CurrentHealth = TargetActor.GetHealth();
+        BaseHealth = TargetActor.GetBaseHealth();
+        AWeaponMaster* CurrentWeapon = TargetActor.GetCurrentWeapon();
+        if (CurrentWeapon)
+        {
+            LastEquippedWeapon = FInventoryData(CurrentWeapon);
+        }
+        TArray<class AWeaponMaster*> Inventory = TargetActor.GetCurrentInventory();
+        int32 InventoryCount = Inventory.Num();
+        if (InventoryCount > 0)
+        {
+            for (int32 i = 0; i < InventoryCount; i++)
+            {
+                if (Inventory[i])
+                {
+                    const FInventoryData InvData = FInventoryData(Inventory[i]);
+                    LastInventory.Add(InvData);
+                }
+            }
+        }
+        LastPosition = TargetActor.GetActorTransform();
+        PositionChanged = true;
+    }
+
     void ToString()
     {
         UE_LOG(LogTemp, Display, TEXT("ActorID: %s \n CurrentHealth: %s \n BaseHealth: %s \n Last Equipped Weapon: \n"), ActorID, CurrentHealth, BaseHealth);
@@ -188,5 +215,10 @@ public:
         }
         LastPosition.DebugPrint();
         UE_LOG(LogTemp, Display, TEXT("Position changed: %s"), *((PositionChanged) ? "true" : "false"));
+    }
+
+    friend bool operator==(FActorData A, FActorData B)
+    {
+        return A.ActorID == B.ActorID;
     }
 };

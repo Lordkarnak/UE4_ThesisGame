@@ -75,6 +75,12 @@ protected:
 	UFUNCTION()
 	void SpawnDefaultQuestList();
 
+	UFUNCTION()
+	void StoreLoadedBots();
+
+	UFUNCTION()
+	void StoreDefaultBots();
+
 	//Signature to bind delegate. 
 	UPROPERTY()
 	FOnPlayerDeathSignature bPlayerDied;

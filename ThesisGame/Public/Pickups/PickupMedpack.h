@@ -3,29 +3,22 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Weapons/WeaponMaster.h"
 #include "Pickups/Pickup.h"
-#include "PickupAmmo.generated.h"
+#include "PickupMedpack.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS(Abstract)
-class THESISGAME_API APickupAmmo : public APickup
+class THESISGAME_API APickupMedpack : public APickup
 {
 	GENERATED_BODY()
-	
+
 public:
 	//bool TransferPickup(APlayableCharacter* Pawn);
 	virtual bool TransferPickup_Implementation(APlayableCharacter* Pawn) override;
-	
+
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = Pickup)
-	int32 Ammo;
-
-	UPROPERTY(EditDefaultsOnly, Category = Pickup)
-	TSubclassOf<AWeaponMaster> WeaponType;
-
-	UFUNCTION(BlueprintCallable)
-	bool MatchesWeapon(UClass* WeaponClass);
+	float Health;
 };
