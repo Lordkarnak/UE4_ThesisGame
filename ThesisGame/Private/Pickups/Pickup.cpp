@@ -102,6 +102,11 @@ bool APickup::TransferPickup_Implementation(APlayableCharacter* Pawn)
 	return true;
 }
 
+TEnumAsByte<EInteractionTypes::Type> APickup::GetPrompt() const
+{
+	return Prompt;
+}
+
 //bool APickup::TransferPickup_Implementation(APlayableCharacter* Pawn)
 //{
 //	return true;

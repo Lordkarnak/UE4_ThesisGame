@@ -197,29 +197,19 @@ void AThesisGameHUD::ChangeMenuWidget(TSubclassOf<UUserWidget> NewWidgetClass)
 
 void AThesisGameHUD::DetermineInteraction(UPrimitiveComponent* TargetComp, AActor* TargetActor)
 {
-	AWeaponMaster* WeaponType = nullptr;
 	APickup* PickupType = nullptr;
-	ASaveTerminal* Terminal = nullptr;
 	if (TargetComp != nullptr)
 	{
-		WeaponType = Cast<AWeaponMaster>(TargetComp);
 		PickupType = Cast<APickup>(TargetComp);
-		Terminal = Cast<ASaveTerminal>(TargetComp);
 	}
 	else if (TargetActor != nullptr)
 	{
-		WeaponType = Cast<AWeaponMaster>(TargetActor);
 		PickupType = Cast<APickup>(TargetActor);
-		Terminal = Cast<ASaveTerminal>(TargetActor);
 	}
 	
-	if (Terminal != nullptr)
+	if (PickupType != nullptr)
 	{
-		CurrentInteraction = EInteractionTypes::Save;
-	}
-	else if (WeaponType != nullptr || PickupType != nullptr)
-	{
-		CurrentInteraction = EInteractionTypes::Take;
+		CurrentInteraction = PickupType->GetPrompt();
 	}
 	else
 	{

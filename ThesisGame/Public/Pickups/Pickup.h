@@ -8,6 +8,7 @@
 #include "AudioThread.h"
 #include "ThesisGame.h"
 #include "ThesisGameGameMode.h"
+#include "ThesisGameHUD.h"
 #include "Pickup.generated.h"
 
 class UCapsuleComponent;
@@ -33,6 +34,8 @@ public:
 
 	//virtual bool TransferPickup_Implementation(APlayableCharacter* Pawn);
 
+	TEnumAsByte<EInteractionTypes::Type> GetPrompt() const;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -53,6 +56,9 @@ protected:
 
 	UPROPERTY(Transient)
 	APlayableCharacter* OverlappedPawn;
+
+	UPROPERTY(EditDefaultsOnly, Category="UMG")
+	TEnumAsByte<EInteractionTypes::Type> Prompt = EInteractionTypes::Take;
 
 private:
 	/** FX component */

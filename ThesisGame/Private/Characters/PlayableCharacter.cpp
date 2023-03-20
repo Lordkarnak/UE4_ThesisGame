@@ -1055,7 +1055,7 @@ float APlayableCharacter::GetHealthPercentage() const
 void APlayableCharacter::AddHealth(float Amount)
 {
 	float AddedHealth = FMath::Min(fCharacterBaseHealth, this->fCharacterHealth + Amount);
-	this->fCharacterHealth += AddedHealth;
+	this->fCharacterHealth = AddedHealth;
 }
 
 USkeletalMeshComponent* APlayableCharacter::GetPawnMesh() const
